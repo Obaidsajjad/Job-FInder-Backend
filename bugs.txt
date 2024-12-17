@@ -1,3 +1,0 @@
-rate limiting at password login
-email for new signup
-jwt
