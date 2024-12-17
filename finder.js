@@ -2,14 +2,15 @@ const express = require("express")
 const app = express();
 const mongoose = require("mongoose")
 const bcrypt = require("bcryptjs");
-const {ObjectId} = require("mongodb")
+const { ObjectId } = require("mongodb")
 app.use(express.json())
 require('dotenv').config()
-const { Job }=require('./models/jobs.models.js');
-const {SecretData}=require('./models/secretData.model.js')
-const {Users} =require('./models/user.model.js')
-const {Compan} =require('./models/company.model.js');
+const { Job } = require('./models/jobs.models.js');
+const { SecretData } = require('./models/secretData.model.js')
+const { Users } = require('./models/user.model.js')
+const { Compan } = require('./models/company.model.js');
 const { Application } = require("./models/applications.model.js");
+const { InvalidLogin } = require("./models/invalid.model.js")
 
 
 // import express from "express";
@@ -19,7 +20,7 @@ const { Application } = require("./models/applications.model.js");
 // const app=express();
 
 const mongoUrl = process.env.dbHost
-const PORT= process.env.PORT
+const PORT = process.env.PORT
 mongoose.connect(mongoUrl).then(() => {
     console.log("Database Connected");
 }).catch((error) => {
@@ -27,7 +28,7 @@ mongoose.connect(mongoUrl).then(() => {
 })
 
 app.listen(PORT, () => {
-    console.log("Node js server started"+PORT);
+    console.log("Node js server started in port " + PORT);
 })
 
 //APIs
@@ -47,7 +48,7 @@ app.post("/signup", async (req, res) => {
         await SecretData.create({ name, email, password: hashpassword, role });
 
         if (role === "Job Seeker") {
-            const user=new Users({
+            const user = new Users({
                 name,
                 email,
                 contact: "",
@@ -60,14 +61,14 @@ app.post("/signup", async (req, res) => {
                 certifications: [],
             })
             await user.save();
-                
-            
+
+
             return res.send({ status: "ok", data: "User Registered Successfully" });
         } else if (role === "Employer") {
-            const company=new Compan({
+            const company = new Compan({
                 name,
-                motto:"",
-                type:"",
+                motto: "",
+                type: "",
                 address: "",
                 followers: "",
                 employees: "",
@@ -76,17 +77,17 @@ app.post("/signup", async (req, res) => {
                 overview: "",
                 foundedDate: "",
                 benefits: [],
-                contact :"",
+                contact: "",
                 email,
                 socialMedia: {
-                  linkedin: "",
-                  twitter: "",
-                  facebook:"",
+                    linkedin: "",
+                    twitter: "",
+                    facebook: "",
 
-            }
-        });
+                }
+            });
             await company.save();
-           
+
             return res.send({ status: "ok", data: "Company Registered Successfully" });
         }
     } catch (err) {
@@ -109,7 +110,7 @@ app.post("/login", async (req, res) => {
         // Compare the provided password with the hashed password in the database
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-            return res.send({ status: "Error", data: "Invalid credentials" });
+            return res.send({ status: "invalid", data: "Invalid credentials" });
         }
 
         // Respond with success and optionally return user data (excluding the password)
@@ -121,19 +122,19 @@ app.post("/login", async (req, res) => {
         });
     } catch (err) {
         console.error("Error during login:", err);
-        res.send({ status: "Error", data: "Something went wrong" });
+        res.send({ status: "Error", data: "Something went wrong1" });
     }
 })
 
 app.post("/getDetails", async (req, res) => {
     const { email } = req.body;
-    const exists = await SecretData.findOne({ email})
-    
-    if (exists) {        
+    const exists = await SecretData.findOne({ email })
+
+    if (exists) {
         try {
             if (exists.role == "Job Seeker") {
-                const userExists = await Users.findOne({ email})
-                if (userExists) {                  
+                const userExists = await Users.findOne({ email })
+                if (userExists) {
                     return res.send({
                         status: "oku", data: {
                             message: "Data Found",
@@ -154,21 +155,21 @@ app.post("/getDetails", async (req, res) => {
                 }
             }
             else if (exists.role == "Employer") {
-                const userExists = await Compan.findOne({ email})
+                const userExists = await Compan.findOne({ email })
                 if (userExists) {
                     return res.send({
                         status: "okc", data: {
                             message: "Data Found company",
-                            company: {  
-                                name:userExists.name,
-                                email:exists.email,
-                                motto:userExists.motto ,                type:userExists.type, 
-                                address:userExists.address ,            followers:userExists.followers,
-                                employees:userExists.employees ,        coverPhoto:userExists.coverPhoto, 
-                                profilePhoto:userExists.profilePhoto ,  overview:userExists.overview, 
-                                foundedDate:userExists.foundedDate,     benefits:userExists.benefits, 
-                                contact:userExists.contact ,            socialMedia:userExists.socialMedia
-                             },
+                            company: {
+                                name: userExists.name,
+                                email: exists.email,
+                                motto: userExists.motto, type: userExists.type,
+                                address: userExists.address, followers: userExists.followers,
+                                employees: userExists.employees, coverPhoto: userExists.coverPhoto,
+                                profilePhoto: userExists.profilePhoto, overview: userExists.overview,
+                                foundedDate: userExists.foundedDate, benefits: userExists.benefits,
+                                contact: userExists.contact, socialMedia: userExists.socialMedia
+                            },
                         }
                     })
                 }
@@ -183,7 +184,7 @@ app.post("/getDetails", async (req, res) => {
 })
 
 app.post("/updateUserResume", async (req, res) => {
-    const {email, name, contact, address,profilePhoto,objective,certifications,skills , education, experience} = req.body;
+    const { email, name, contact, address, profilePhoto, objective, certifications, skills, education, experience } = req.body;
     // Validate email presence
     if (!email) {
         return res.send({ status: "Error", data: "Email is required" });
@@ -192,7 +193,7 @@ app.post("/updateUserResume", async (req, res) => {
         // Check if the user exists
 
         const existingUser = await Users.findOne({ email });
-        
+
         if (!existingUser) {
             return res.send({ status: "Error", data: "User not found" });
         }
@@ -216,7 +217,7 @@ app.post("/updateUserResume", async (req, res) => {
         );
 
         // Respond with the updated user details
-        res.send({status: "ok", data: { message: "User resume updated successfully", user: updatedUser } });
+        res.send({ status: "ok", data: { message: "User resume updated successfully", user: updatedUser } });
     } catch (err) {
         res.send({ status: "Error", data: "Internal Server Error" });
     }
@@ -224,7 +225,7 @@ app.post("/updateUserResume", async (req, res) => {
 
 
 app.post("/updateCompanyData", async (req, res) => {
-    const {name,motto, type, address,followers, employees, coverPhoto, profilePhoto,overview, foundedDate,benefits,contact, email,socialMedia} = req.body;
+    const { name, motto, type, address, followers, employees, coverPhoto, profilePhoto, overview, foundedDate, benefits, contact, email, socialMedia } = req.body;
     // Validate email presence
     if (!email) {
         return res.send({ status: "Error", data: "Email is required" });
@@ -253,14 +254,14 @@ app.post("/updateCompanyData", async (req, res) => {
                     foundedDate: foundedDate || existingUser.foundedDate,
                     coverPhoto: coverPhoto || existingUser.coverPhoto,
                     benefits: benefits.length ? benefits : existingUser.benefits,
-                    socialMedia:  socialMedia.length? socialMedia : existingUser.socialMedia,
+                    socialMedia: socialMedia.length ? socialMedia : existingUser.socialMedia,
                 },
             },
             { new: true } // Return the updated document
         );
 
         // Respond with the updated user details
-        res.send({status: "ok", data: { message: "Company Data updated successfully", company: updatedCompany } });
+        res.send({ status: "ok", data: { message: "Company Data updated successfully", company: updatedCompany } });
     } catch (err) {
         res.send({ status: "Error", data: "Internal Server Error" });
     }
@@ -268,28 +269,28 @@ app.post("/updateCompanyData", async (req, res) => {
 
 
 app.post("/addJob", async (req, res) => {
-    const { title, companyName, description, additional, salary, skills, jobStatus, type,address,email} = req.body;
+    const { title, companyName, description, additional, salary, skills, jobStatus, type, address, email } = req.body;
 
-    try { 
-        const companyExists=await Compan.findOne({email:email})    
-        if(companyExists){
-            const job =new Job({
+    try {
+        const companyExists = await Compan.findOne({ email: email })
+        if (companyExists) {
+            const job = new Job({
                 email,
                 title,
-                companyName:companyExists.name,
+                companyName: companyExists.name,
                 description,
                 additional,
                 salary,
-                skills, jobStatus, type,address,
+                skills, jobStatus, type, address,
             });
             await job.save();
-    
-            res.send({ status: "ok", data: job})
-            
+
+            res.send({ status: "ok", data: job })
+
         }
-        
+
     } catch (err) {
-        res.send({ status: "error", data: "Operation Unsuccessfull"+(err) })
+        res.send({ status: "error", data: "Operation Unsuccessfull" + (err) })
     }
 })
 
@@ -297,155 +298,159 @@ app.post("/addJob", async (req, res) => {
 
 app.post("/getJobs", async (req, res) => {
     const { email } = req.body;
-    if(!email){
-        return res.send({status:"Error", data:"Email is required"})
+    if (!email) {
+        return res.send({ status: "Error", data: "Email is required" })
     }
     try {
-        const jobExists=await Job.find({email:email})
-        if (jobExists){
-            res.send({ status: "ok", data: {
-                message:"Job Found for given email",
-                jobs:jobExists
-            } 
-        })
-        }else{
-            return res.send({status:"No", data:"No Job found"})
+        const jobExists = await Job.find({ email: email })
+        if (jobExists) {
+            res.send({
+                status: "ok", data: {
+                    message: "Job Found for given email",
+                    jobs: jobExists
+                }
+            })
+        } else {
+            return res.send({ status: "No", data: "No Job found" })
         }
     } catch (err) {
-        res.send({ status: "error", data: "Operation Unsuccessfull"+(err) })
+        res.send({ status: "error", data: "Operation Unsuccessfull" + (err) })
     }
 })
 
 
 app.get("/getAllJobs", async (req, res) => {
     try {
-        const jobExists=await Job.find({})
-        if (jobExists.length>0){
-            res.send({ status: "ok", data: {
-                message:"Job Found for given email",
-                jobs:jobExists
-            } 
-        })
-        
-        }else{
-            return res.send({status:"No", data:"No Job found"})
+        const jobExists = await Job.find({})
+        if (jobExists.length > 0) {
+            res.send({
+                status: "ok", data: {
+                    message: "Job Found for given email",
+                    jobs: jobExists
+                }
+            })
+
+        } else {
+            return res.send({ status: "No", data: "No Job found" })
         }
     } catch (err) {
-        res.send({ status: "error", data: "Operation Unsuccessfull"+(err) })
+        res.send({ status: "error", data: "Operation Unsuccessfull" + (err) })
     }
 })
 
 app.get('/jobSearch', async (req, res) => {
     const { title } = req.query;
-  
+
     const filters = {};
-  
+
     if (title) filters.title = { $regex: title, $options: 'i' };
     // if (location) filters.location = { $regex: location, $options: 'i' };
     // if (skills) filters.skills = { $in: skills.split(',') };
-  
+
     try {
-      const jobs = await Job.find(filters);
-      res.send({ status: "ok", data: {
-        message:"Job Found for given email",
-        jobs
-    }
-}) 
+        const jobs = await Job.find(filters);
+        res.send({
+            status: "ok", data: {
+                message: "Job Found for given email",
+                jobs
+            }
+        })
     } catch (err) {
-        res.send({ status: "error", data: "Operation Unsuccessfull"+(err) })
+        res.send({ status: "error", data: "Operation Unsuccessfull" + (err) })
     }
-  });
-  
+});
+
 
 app.delete("/deleteJob/:id", async (req, res) => {
     const { id } = req.params; // Get the id from the URL parameter
     if (!id) {
-        return res.send({status: "Error", data: "Job id is required"});
+        return res.send({ status: "Error", data: "Job id is required" });
     }
-    
+
     try {
         console.log(id);
-        
-        const newID=new ObjectId(id)
-    console.log(newID);
+
+        const newID = new ObjectId(id)
+        console.log(newID);
         const jobExists = await Job.findByIdAndDelete(newID);
         if (jobExists) {
-            return res.send({status: "ok",data: "Selected Job deleted"});
-        } 
+            return res.send({ status: "ok", data: "Selected Job deleted" });
+        }
         else {
-            return res.send({status: "No", data: "No Job found"});
+            return res.send({ status: "No", data: "No Job found" });
         }
 
     } catch (err) {
-        return res.send({status: "error", data: "Operation Unsuccessful: " + err.message });
+        return res.send({ status: "error", data: "Operation Unsuccessful: " + err.message });
     }
 });
 
 app.post("/submitApplication", async (req, res) => {
-    const {jobID,company, contact,address,skills,education,experience, certifications, name, email, profilePhoto,interviewDate,interviewTime,jobTitle,about} = req.body;
+    const { jobID, company, contact, address, skills, education, experience, certifications, name, email, profilePhoto, interviewDate, interviewTime, jobTitle, about } = req.body;
 
-    const existingJob = await Application.findOne({ email:email, jobID:jobID });
+    const existingJob = await Application.findOne({ email: email, jobID: jobID });
     if (existingJob) {
         return res.send({ status: "twice", data: "Already applied in this job" });
     }
 
-    try {        
-        const application =new Application({
-            jobID,company, contact,address,skills,education,experience, certifications, name, email, profilePhoto,interviewDate,interviewTime,jobTitle,about
+    try {
+        const application = new Application({
+            jobID, company, contact, address, skills, education, experience, certifications, name, email, profilePhoto, interviewDate, interviewTime, jobTitle, about, place: ""
         });
         await application.save();
 
-        res.send({ status: "ok", data: "Application Submited Successfully"})
-        
+        res.send({ status: "ok", data: "Application Submited Successfully" })
+
     } catch (err) {
-        res.send({ status: "error", data: "Operation Unsuccessfull"+(err) })
+        res.send({ status: "error", data: "Operation Unsuccessfull" + (err) })
     }
 })
 
 app.post("/getApplications", async (req, res) => {
     const { email } = req.body;
-    if(!email){
-        return res.send({status:"Error", data:"Email is required"})
+    if (!email) {
+        return res.send({ status: "Error", data: "Email is required" })
     }
     try {
-        const appExists=await Application.find({company:email})
-        if (appExists){
-            res.send({ status: "ok", data: {
-                message:"Applications Found for given email",
-                applications:appExists
-            }             
-        })
-        }else{
-            return res.send({status:"No", data:"No Job found"})
+        const appExists = await Application.find({ company: email })
+        if (appExists) {
+            res.send({
+                status: "ok", data: {
+                    message: "Applications Found for given email",
+                    applications: appExists
+                }
+            })
+        } else {
+            return res.send({ status: "No", data: "No Job found" })
         }
     } catch (err) {
-        res.send({ status: "error", data: "Operation Unsuccessfull"+(err) })
+        res.send({ status: "error", data: "Operation Unsuccessfull" + (err) })
     }
 })
 
 
 app.post("/sheduleInterview", async (req, res) => {
-    const {email,jobID,interviewDate,interviewTime} = req.body;
+    const { email, jobID, interviewDate, interviewTime, place } = req.body;
     console.log(email);
     // Validate email presence
     if (!email) {
         return res.send({ status: "Error", data: "Email is required" });
     }
-    
+
     try {
-       
+
         const updatedApplication = await Application.findOneAndUpdate(
-            { email,jobID }, // Find user by email
+            { email, jobID }, // Find user by email
             {
                 $set: {
-                    interviewDate, interviewTime
+                    interviewDate, interviewTime, place
                 },
             },
             { new: true } // Return the updated document
         );
 
         // Respond with the updated user details
-        res.send({status: "ok", data: { message: "Company Data updated successfully", company: updatedApplication } });
+        res.send({ status: "ok", data: { message: "Company Data updated successfully", company: updatedApplication } });
     } catch (err) {
         res.send({ status: "Error", data: "Internal Server Error" });
     }
@@ -474,7 +479,7 @@ app.post("/getRecommendedJobs", async (req, res) => {
                 status: "ok",
                 data: {
                     message: "Jobs found for the given email",
-                    jobs:recommendedJobs
+                    jobs: recommendedJobs
                 }
             });
         } else {
@@ -516,6 +521,7 @@ app.post("/getAppliedJobs", async (req, res) => {
                     ...job.toObject(), // Include job details
                     interviewDate: application?.interviewDate || "pending", // Add interview date
                     interviewTime: application?.interviewTime || "pending", // Add interview time
+                    place: application?.place || "pending",
                 };
             });
 
@@ -534,6 +540,69 @@ app.post("/getAppliedJobs", async (req, res) => {
     }
 });
 
+app.post("/invalidLogin", async (req, res) => {
+    const { email, option } = req.body;
+
+    try {
+        if (option === true) {
+            const userExists = await InvalidLogin.findOne({ email });
+
+            if (userExists) {
+                // Update the existing user's attempts
+                await InvalidLogin.findOneAndUpdate(
+                    { email }, 
+                    { $set: { attempts: true } },
+                    { new: true }
+                );
+                return res.send({ status: "ok", data: "User Blocked! Too many failed attempts" });
+            } else {
+                // Create a new record for the email
+                const invalid = new InvalidLogin({ email, attempts: true });
+                await invalid.save();
+                return res.send({ status: "ok", data: "User Blocked! Too many failed attempts" });
+            }
+        } else if (option === false) {
+            const userExists = await InvalidLogin.findOne({ email });
+            if (userExists) {
+                return res.send({ status: "ok", data: userExists.attempts });
+            } else {
+                return res.send({ status: "ok", data: false }); // User not found, no attempts
+            }
+        }
+    } catch (err) {
+        return res.status(500).send({ status: "error", data: "Operation Unsuccessful: " + err.message });
+    }
+});
+
+
+app.post('/notifications', async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        // Get today's date in dd/mm/yyyy format
+        const today = new Date();
+        const formattedToday = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
+        // Fetch jobs posted today
+        const jobsToday = await Job.find({ jobStatus: formattedToday });
+
+        // Fetch all applications with interviews scheduled (not empty strings) for the provided email
+        const interviews = await Application.find({
+            email: email,
+            interviewDate: { $ne: "" } // Check that interviewDate is not an empty string
+        });
+        console.log(jobsToday);
+        console.log(interviews);
+        
+        
+
+        // Send final response
+        res.send({ status: "ok", notifications: {jobs:jobsToday, interview: interviews} });
+    } catch (error) {
+        console.error(error);
+        res.send({ status: "Error", message: "Internal Server Error" });
+    }
+});
 
 
 

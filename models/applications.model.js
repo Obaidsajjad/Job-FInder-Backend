@@ -35,6 +35,7 @@ const applicationSchema = new mongoose.Schema({
     ],
     interviewDate: { type: String },
     interviewTime: { type: String },
+    place: { type: String },
     jobTitle: { type: String },
     about: { type: String }
 
